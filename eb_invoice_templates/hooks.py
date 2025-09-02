@@ -6,22 +6,23 @@ app_email = "simo@sofiaelectricbrewing.com"
 app_license = "gpl-3.0"
 
 # erp_invoice_templates/erp_invoice_templates/hooks.py
+
 fixtures = [
     {"dt": "Print Format", "filters": [["name", "in", [
-        "Sales Invoice - My Custom",
-        # add more print formats here
+        "Sales Invoice - EB Template"
     ]]]},
     {"dt": "Property Setter", "filters": [["name", "in", [
-        # e.g. Default Print Format for Sales Invoice
         "Sales Invoice-default_print_format"
     ]]]},
     {"dt": "Custom Field", "filters": [["name", "in", [
-        # list any Custom Fields used in your template (if any)
-        # e.g. "Sales Invoice-your_custom_field"
+        "Sales Invoice Item-excise_code",
+        "Sales Invoice Item-abv",
+        "Sales Invoice Item-container",
+        "Sales Invoice Item-ean",
+        "Sales Invoice Item-country_of_origin",
     ]]]},
-    # optionally ship a specific Letterhead if it's unique to this template:
-    # {"dt": "Letterhead", "filters": [["name", "in", ["My Company Letterhead"]]]},
 ]
+
 
 # Apps
 # ------------------

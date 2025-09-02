@@ -1,0 +1,9 @@
+.invoice { font-size: 12px; }
+.meta { margin: .5rem 0 1rem; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: .25rem .5rem; }
+.items { width: 100%; border-collapse: collapse; }
+.items th, .items td { border-bottom: 1px solid #ddd; padding: 6px 4px; vertical-align: top; }
+.num { text-align: right; white-space: nowrap; }
+.totals { margin-top: 10px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; }
+.totals .grand { font-weight: 700; border-top: 2px solid #000; padding-top: 4px; margin-top: 2px; }
+.desc { color: #555; font-size: 11px; }
+@media print { .invoice { page-break-inside: avoid; } }

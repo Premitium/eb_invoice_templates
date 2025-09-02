@@ -1,3 +1,4 @@
+<div style="font-size:10px;color:#999;">TEMPLATE: EB v1</div>
 <style>
 {% include "eb_invoice_templates/templates/includes/_invoice.css" ignore missing %}
 </style>
@@ -22,17 +23,19 @@
       </tr>
     </thead>
     <tbody>
-      {% for row in doc.items %}
-      <tr>
-        <td>
-          <div class="item-name">{{ row.item_name or row.item_code }}</div>
-          {% if row.description %}<div class="desc">{{ row.description | frappe.utils.strip_html }}</div>{% endif %}
-        </td>
-        <td class="num">{{ row.qty }}</td>
-        <td class="num">{{ row.get_formatted("rate") }}</td>
-        <td class="num">{{ row.get_formatted("amount") }}</td>
-      </tr>
-      {% endfor %}
+     {% for row in doc.items %}
+        <tr>
+            <td>
+            <div class="item-name">{{ row.item_name or row.item_code }}</div>
+            {% if row.description %}
+                <div class="desc">{{ row.description | striptags }}</div>
+            {% endif %}
+            </td>
+            <td class="num">{{ row.qty }}</td>
+            <td class="num">{{ row.get_formatted("rate") }}</td>
+            <td class="num">{{ row.get_formatted("amount") }}</td>
+        </tr>
+    {% endfor %}
     </tbody>
   </table>
 

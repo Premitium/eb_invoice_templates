@@ -1,146 +1,152 @@
 <div style="font-size:10px;color:#999;">TEMPLATE: EB v2</div>
 
 <style>
-{% include "eb_invoice_templates/templates/includes/_invoice.css" ignore missing %}
+    {
+        % include "eb_invoice_templates/templates/includes/_invoice.css" ignore missing %
+    }
 </style>
 
 <div class="print-format">
 
-  <div class="invoice">
-    <h2>{{ _(doc.company) }}</h2>
-    <h3>{{ _("Sales Invoice") }} {{ doc.name }}</h3>
+    <div class="invoice">
+        <h2>{{ _(doc.company) }}</h2>
+        <h3>{{ _("Sales Invoice") }} {{ doc.name }}</h3>
 
-    <div class="meta grid-3">
-      <div>{{ _("Posting Date") }}: {{ doc.get_formatted("posting_date") }}</div>
-      <div>{{ _("Customer") }}: {{ doc.customer_name or doc.customer }}</div>
-      {% if doc.tax_id %}<div>{{ _("VAT No.") }}: {{ doc.tax_id }}</div>{% endif %}
-    </div>
+        <div class="meta grid-3">
+            <div>{{ _("Posting Date") }}: {{ doc.get_formatted("posting_date") }}</div>
+            <div>{{ _("Customer") }}: {{ doc.customer_name or doc.customer }}</div>
+            {% if doc.tax_id %}<div>{{ _("VAT No.") }}: {{ doc.tax_id }}</div>{% endif %}
+        </div>
 
-    <table class="table table-bordered table-compact items">
-      <thead>
-        <tr>
-          <th>{{ _("Item") }}</th>
-          <th class="num">{{ _("Qty") }}</th>
-          <th class="num">{{ _("Rate") }}</th>
-          <th class="num">{{ _("Amount") }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in doc.items %}
-        {% set item = frappe.get_cached_doc("Item", row.item_code) if row.item_code else None %}
-        <tr>
-          <td>
-            <div class="item-name">{{ row.item_name or row.item_code }}</div>
-            {% if row.description %}
-              <div class="desc">{{ row.description | striptags }}</div>
-            {% endif %}
+        <table class="table table-bordered table-compact items">
+            <thead>
+                <tr>
+                    <th>{{ _("Item") }}</th>
+                    <th class="num">{{ _("Qty") }}</th>
+                    <th class="num">{{ _("Rate") }}</th>
+                    <th class="num">{{ _("Amount") }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in doc.items %}
+                {% set item = frappe.get_cached_doc("Item", row.item_code) if row.item_code else None %}
+                <tr>
+                    <td>
+                        <div class="item-name">{{ row.item_name or row.item_code }}</div>
+                        {% if row.description %}
+                        <div class="desc">{{ row.description | striptags }}</div>
+                        {% endif %}
 
-            {# --- Batches (Serial and Batch Bundle preferred) --- #}
-            {% if row.serial_and_batch_bundle %}
-              {% set bundle = frappe.get_doc("Serial and Batch Bundle", row.serial_and_batch_bundle) %}
-              <table class="table table-bordered table-compact" style="margin-top:6px;">
-                <thead>
-                  <tr>
-                    <th style="text-align:left;">{{ _("Batch No") }}</th>
-                    <th style="text-align:right;">{{ _("Batch Qty") }}</th>
-                    <th style="text-align:left;">{{ _("Expiry") }}</th>
-                    <th>{{ _("Plato") }}<br><span class="muted">custom_plato</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for e in bundle.entries %}
-                    {% if e.batch_no %}
-                      {% set batch_doc = frappe.get_cached_doc("Batch", e.batch_no) %}
-                      <tr>
-                        <td>{{ e.batch_no }}</td>
-                        <td class="num">{{ e.qty or e.stock_qty or 0 }}</td>
-                        <td>{{ batch_doc.expiry_date or "" }}</td>
-                        <td>{{ batch_doc.custom_plato if batch_doc.custom_plato else "" }}</td>
-                      </tr>
-                    {% endif %}
-                  {% endfor %}
-                </tbody>
-              </table>
-            {% elif row.batch_no %}
-              {% set batch_doc = frappe.get_cached_doc("Batch", row.batch_no) %}
-              <table class="table table-bordered table-compact" style="margin-top:6px;">
-                <thead>
-                  <tr>
-                    <th style="text-align:left;">{{ _("Batch No") }}</th>
-                    <th style="text-align:right;">{{ _("Batch Qty") }}</th>
-                    <th style="text-align:left;">{{ _("Expiry") }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>{{ row.batch_no }}</td>
-                    <td class="num">{{ row.qty or 0 }}</td>
-                    <td>{{ batch_doc.expiry_date or "" }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            {% endif %}
+                        {# --- Batches (Serial and Batch Bundle preferred) --- #}
+                        {% if row.serial_and_batch_bundle %}
+                        {% set bundle = frappe.get_doc("Serial and Batch Bundle", row.serial_and_batch_bundle) %}
+                        <table class="table table-bordered table-compact" style="margin-top:6px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">{{ _("Batch No") }}</th>
+                                    <th style="text-align:right;">{{ _("Batch Qty") }}</th>
+                                    <th style="text-align:left;">{{ _("Expiry") }}</th>
+                                    <th>{{ _("Plato") }}<br><span class="muted">custom_plato</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for e in bundle.entries %}
+                                {% if e.batch_no %}
+                                {% set batch_doc = frappe.get_cached_doc("Batch", e.batch_no) %}
+                                <tr>
+                                    <td>{{ e.batch_no }}</td>
+                                    <td class="num">{{ e.qty or e.stock_qty or 0 }}</td>
+                                    <td>{{ batch_doc.expiry_date or "" }}</td>
+                                    <td>{{ batch_doc.custom_plato if batch_doc.custom_plato else "" }}</td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% elif row.batch_no %}
+                        {% set batch_doc = frappe.get_cached_doc("Batch", row.batch_no) %}
+                        <table class="table table-bordered table-compact" style="margin-top:6px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">{{ _("Batch No") }}</th>
+                                    <th style="text-align:right;">{{ _("Batch Qty") }}</th>
+                                    <th style="text-align:left;">{{ _("Expiry") }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{ row.batch_no }}</td>
+                                    <td class="num">{{ row.qty or 0 }}</td>
+                                    <td>{{ batch_doc.expiry_date or "" }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        {% endif %}
 
-            {# --- per-item micro details (keep your exact properties) --- #}
-            <div class="micro" style="margin-top:6px;">
-              <table class="table table-bordered table-compact">
-                <tbody>
-                  <tr>
-                    <td style="width:40%">{{ _("Tariff") }}</td>
-                    <td>{{ (item and item.custom_tariff_number) or "" }}</td>
-                  </tr>
-                  <tr>
-                    <td style="width:40%">{{ _("Excise Rate") }}</td>
-                    <td>{{ (item and item.custom_excise_rate) or "" }}</td>
-                  </tr>
-                  <tr>
-                    <td style="width:40%">{{ _("Volume") }}</td>
-                    <td>{{ (item and item.custom_volume) or "" }}</td>
-                  </tr>
-                  <tr>
-                    <td style="width:40%">{{ _("Country of Origin") }}</td>
-                    <td>{{ (item and item.country_of_origin) or "" }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </td>
+                        {# --- per-item micro details (keep your exact properties) --- #}
+                        <div class="micro" style="margin-top:6px;">
+                            <table class="table table-bordered table-compact">
+                                <tbody>
+                                    <tr>
+                                        <td style="width:40%">{{ _("Tariff") }}</td>
+                                        <td>{{ (item and item.custom_tariff_number) or "" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="width:40%">{{ _("Excise Rate") }}</td>
+                                        <td>
+                                            {% if item and item.custom_excise_rate %}
+                                            {{ item.custom_excise_rate }} {{ doc.currency }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="width:40%">{{ _("Volume") }}</td>
+                                        <td>{{ (item and item.custom_volume) or "" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="width:40%">{{ _("Country of Origin") }}</td>
+                                        <td>{{ (item and item.country_of_origin) or "" }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
 
-          <td class="num">{{ row.qty }}</td>
-          <td class="num">{{ row.get_formatted("rate") }}</td>
-          <td class="num">{{ row.get_formatted("amount") }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+                    <td class="num">{{ row.qty }}</td>
+                    <td class="num">{{ row.get_formatted("rate") }}</td>
+                    <td class="num">{{ row.get_formatted("amount") }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-    <table class="table totals pull-right">
-      <tbody>
-        <tr>
-          <td class="label">{{ _("Net Total") }}</td>
-          <td class="value">{{ doc.get_formatted("total") }}</td>
-        </tr>
-        <tr>
-          <td class="label">{{ _("Taxes") }}</td>
-          <td class="value">{{ doc.get_formatted("total_taxes_and_charges") }}</td>
-        </tr>
-        <tr class="grand">
-          <td class="label"><strong>{{ _("Grand Total") }}</strong></td>
-          <td class="value"><strong>{{ doc.get_formatted("grand_total") }}</strong></td>
-        </tr>
-        {% if doc.rounded_total %}
-        <tr>
-          <td class="label">{{ _("Rounded Total") }}</td>
-          <td class="value">{{ doc.get_formatted("rounded_total") }}</td>
-        </tr>
+        <table class="table totals pull-right">
+            <tbody>
+                <tr>
+                    <td class="label">{{ _("Net Total") }}</td>
+                    <td class="value">{{ doc.get_formatted("total") }}</td>
+                </tr>
+                <tr>
+                    <td class="label">{{ _("Taxes") }}</td>
+                    <td class="value">{{ doc.get_formatted("total_taxes_and_charges") }}</td>
+                </tr>
+                <tr class="grand">
+                    <td class="label"><strong>{{ _("Grand Total") }}</strong></td>
+                    <td class="value"><strong>{{ doc.get_formatted("grand_total") }}</strong></td>
+                </tr>
+                {% if doc.rounded_total %}
+                <tr>
+                    <td class="label">{{ _("Rounded Total") }}</td>
+                    <td class="value">{{ doc.get_formatted("rounded_total") }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        {% if doc.terms %}
+        <div class="terms">
+            <strong>{{ _("Terms") }}:</strong> {{ doc.terms | striptags }}
+        </div>
         {% endif %}
-      </tbody>
-    </table>
-
-    {% if doc.terms %}
-      <div class="terms">
-        <strong>{{ _("Terms") }}:</strong> {{ doc.terms | striptags }}
-      </div>
-    {% endif %}
-  </div>
+    </div>
 </div>

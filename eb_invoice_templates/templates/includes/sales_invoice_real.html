@@ -30,54 +30,58 @@
             <tbody>
                 {% for row in doc.items %}
                 {% set item = frappe.get_cached_doc("Item", row.item_code) if row.item_code else None %}
-                {% if item %}
-                {% set d = item.as_dict() %}
+                    {% if item %}
+  {% set meta = frappe.get_meta("Item") %}
 
-                <h5 style="margin:6px 0;">All Item properties for <code>{{ item.name }}</code></h5>
-                <ul style="margin:0 0 10px 16px; padding:0;">
-                    {% for k in d.keys()|list|sort %}
-                    {% set v = d[k] %}
-                    <li style="margin:2px 0;">
-                        <b>{{ k }}</b>:
-                        {# --- lists / child tables --- #}
-                        {% if v is iterable and v is not string %}
-                        {% if v|length == 0 %}
-                            []
-                        {% else %}
-                            <ul style="margin:2px 0 2px 16px; padding:0;">
-                            {% for r in v %}
-                                {% set rd = r.as_dict() if r.as_dict else r %}
-                                <li style="margin:2px 0;">
-                                {% if rd is mapping %}
-                                    {# pretty-print each child row as key=value pairs #}
-                                    {% for ck in rd.keys()|list|sort %}
-                                    <span class="muted">{{ ck }}</span>=<span>{{ rd[ck] }}</span>{% if not loop.last %}, {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                    {{ rd }}
-                                {% endif %}
-                                </li>
-                            {% endfor %}
-                            </ul>
-                        {% endif %}
-                        {# --- scalars / dicts --- #}
-                        {% else %}
-                        {% if v is mapping %}
-                            {# inline map: key=value, key2=value2 ... #}
-                            {% for mk in v.keys()|list|sort %}
-                            <span class="muted">{{ mk }}</span>=<span>{{ v[mk] }}</span>{% if not loop.last %}, {% endif %}
-                            {% endfor %}
-                        {% else %}
-                            {{ v }}
-                        {% endif %}
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <div class="muted">No Item loaded for this row.</div>
-                {% endif %}
+  {# Core (non-table) fields #}
+  <table class="table table-bordered table-compact" style="margin-top:6px;">
+    <thead><tr><th colspan="2">Item {{ item.name }} — fields</th></tr></thead>
+    <tbody>
+      <tr><td>name</td><td>{{ item.name }}</td></tr>
+      {% for f in meta.fields if f.fieldtype not in ["Table", "Table MultiSelect"] %}
+        {% set val = item.get(f.fieldname) %}
+        {% if val not in (None, "") %}
+          <tr>
+            <td>{{ f.label }} <span class="muted">({{ f.fieldname }})</span></td>
+            <td>{{ item.get_formatted(f.fieldname) if item.get_formatted else val }}</td>
+          </tr>
+        {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
 
+  {# Child tables (show all rows, all columns) #}
+  {% for f in meta.fields if f.fieldtype in ["Table", "Table MultiSelect"] %}
+    {% set rows = item.get(f.fieldname) or [] %}
+    {% if rows %}
+      {% set child_meta = frappe.get_meta(f.options) %}
+      <h5 style="margin-top:8px;">{{ f.label }} <span class="muted">({{ f.options }})</span></h5>
+      {% for r in rows %}
+        {% set rd = r.as_dict() if r.as_dict else r %}
+        <table class="table table-bordered table-compact" style="margin-top:4px;">
+          <tbody>
+            <tr><td>name</td><td>{{ rd.get("name") }}</td></tr>
+            {% for cf in child_meta.fields %}
+              {% set cval = rd.get(cf.fieldname) %}
+              {% if cval not in (None, "") %}
+                <tr>
+                  <td>{{ cf.label }} <span class="muted">({{ cf.fieldname }})</span></td>
+                  <td>{{ cval }}</td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+{% else %}
+  <div class="muted">No Item loaded for this row.</div>
+{% endif %}
+
+
+                {% for row in doc.items %}
+                {% set item = frappe.get_cached_doc("Item", row.item_code) if row.item_code else None %}
                 <tr>
                     <td>
                         <div class="item-name">{{ row.item_name or row.item_code }}</div>
@@ -97,52 +101,39 @@
                                     <th>{{ _("Plato") }}<br><span class="muted">custom_plato</span></th>
                                 </tr>
                             </thead>
-                           
+                            <tbody>
+                                {% for e in bundle.entries %}
+                                {% if e.batch_no %}
+                                {% set batch_doc = frappe.get_cached_doc("Batch", e.batch_no) %}
+                                <tr>
+                                    <td>{{ e.batch_no }}</td>
+                                    <td class="num">{{ e.qty or e.stock_qty or 0 }}</td>
+                                    <td>{{ batch_doc.expiry_date or "" }}</td>
+                                    <td>{{ batch_doc.custom_plato if batch_doc.custom_plato else "" }}</td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
                         </table>
                         {% elif row.batch_no %}
-  {# define batch_doc here! #}
-  {% set batch_doc = frappe.get_cached_doc("Batch", row.batch_no) %}
-
-  {# inputs #}
-  {% set plato = frappe.utils.flt(batch_doc.custom_plato) %}
-  {% set rate_per_l = frappe.utils.flt((item and item.custom_excise_rate) or 0) %}
-  {% set vol_l = frappe.utils.flt((item and item.custom_volume) or 0) %}
-  {% set liters_row = frappe.utils.flt(row.qty or 0) * vol_l %}
-
-  {# per-L excise is plato × per-L rate (no hL conversion) #}
-  {% set per_l = plato * rate_per_l %}
-  {% set excise_row = per_l * liters_row %}
-
-  <table class="table table-bordered table-compact" style="margin-top:6px;">
-    <thead>
-      <tr>
-        <th style="text-align:left;">{{ _("Batch No") }}</th>
-        <th style="text-align:right;">{{ _("Batch Qty") }}</th>
-        <th style="text-align:left;">{{ _("Expiry") }}</th>
-        <th>{{ _("Plato") }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ row.batch_no }}</td>
-        <td class="num">{{ row.qty or 0 }}</td>
-        <td>{{ batch_doc.expiry_date or "" }}</td>
-        <td>{{ batch_doc.custom_plato or "" }}</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="micro" style="margin-top:4px;">
-    <b>{{ _("Excise (this row)") }}:</b>
-    {{ frappe.utils.fmt_money(excise_row, currency=None, precision=6) }} {{ doc.currency }}
-    <span class="muted">
-      ({{ frappe.utils.flt(liters_row, 3) }} L ×
-       {{ frappe.utils.fmt_money(per_l, currency=None, precision=6) }} {{ doc.currency }}/L)
-    </span>
-  </div>
-{% endif %}
-
-
+                        {% set batch_doc = frappe.get_cached_doc("Batch", row.batch_no) %}
+                        <table class="table table-bordered table-compact" style="margin-top:6px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">{{ _("Batch No") }}</th>
+                                    <th style="text-align:right;">{{ _("Batch Qty") }}</th>
+                                    <th style="text-align:left;">{{ _("Expiry") }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{ row.batch_no }}</td>
+                                    <td class="num">{{ row.qty or 0 }}</td>
+                                    <td>{{ batch_doc.expiry_date or "" }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        {% endif %}
 
                         {# --- per-item micro details (keep your exact properties) --- #}
                         <div class="micro" style="margin-top:6px;">

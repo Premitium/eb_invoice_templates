@@ -1,0 +1,46 @@
+{% if item %}    
+                {% set d = item.as_dict() %}
+                <h5 style="margin:6px 0;">All Item properties for <code>{{ item.name }}</code></h5>
+                <ul style="margin:0 0 10px 16px; padding:0;">
+                    {% for k in d.keys()|list|sort %}
+                    {% set v = d[k] %}
+                    <li style="margin:2px 0;">
+                        <b>{{ k }}</b>:
+                        {# --- lists / child tables --- #}
+                        {% if v is iterable and v is not string %}
+                        {% if v|length == 0 %}
+                            []
+                        {% else %}
+                            <ul style="margin:2px 0 2px 16px; padding:0;">
+                            {% for r in v %}
+                                {% set rd = r.as_dict() if r.as_dict else r %}
+                                <li style="margin:2px 0;">
+                                {% if rd is mapping %}
+                                    {# pretty-print each child row as key=value pairs #}
+                                    {% for ck in rd.keys()|list|sort %}
+                                    <span class="muted">{{ ck }}</span>=<span>{{ rd[ck] }}</span>{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    {{ rd }}
+                                {% endif %}
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        {% endif %}
+                        {# --- scalars / dicts --- #}
+                        {% else %}
+                        {% if v is mapping %}
+                            {# inline map: key=value, key2=value2 ... #}
+                            {% for mk in v.keys()|list|sort %}
+                            <span class="muted">{{ mk }}</span>=<span>{{ v[mk] }}</span>{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {{ v }}
+                        {% endif %}
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="muted">No Item loaded for this row.</div>
+                {% endif %}

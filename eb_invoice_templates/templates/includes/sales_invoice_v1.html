@@ -28,55 +28,19 @@
                 </tr>
             </thead>
             <tbody>
+
                 {% for row in doc.items %}
                 {% set item = frappe.get_cached_doc("Item", row.item_code) if row.item_code else None %}
                 {% if item %}
-                {% set d = item.as_dict() %}
-
-                <h5 style="margin:6px 0;">All Item properties for <code>{{ item.name }}</code></h5>
-                <ul style="margin:0 0 10px 16px; padding:0;">
-                    {% for k in d.keys()|list|sort %}
-                    {% set v = d[k] %}
-                    <li style="margin:2px 0;">
-                        <b>{{ k }}</b>:
-                        {# --- lists / child tables --- #}
-                        {% if v is iterable and v is not string %}
-                        {% if v|length == 0 %}
-                            []
-                        {% else %}
-                            <ul style="margin:2px 0 2px 16px; padding:0;">
-                            {% for r in v %}
-                                {% set rd = r.as_dict() if r.as_dict else r %}
-                                <li style="margin:2px 0;">
-                                {% if rd is mapping %}
-                                    {# pretty-print each child row as key=value pairs #}
-                                    {% for ck in rd.keys()|list|sort %}
-                                    <span class="muted">{{ ck }}</span>=<span>{{ rd[ck] }}</span>{% if not loop.last %}, {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                    {{ rd }}
-                                {% endif %}
-                                </li>
-                            {% endfor %}
-                            </ul>
-                        {% endif %}
-                        {# --- scalars / dicts --- #}
-                        {% else %}
-                        {% if v is mapping %}
-                            {# inline map: key=value, key2=value2 ... #}
-                            {% for mk in v.keys()|list|sort %}
-                            <span class="muted">{{ mk }}</span>=<span>{{ v[mk] }}</span>{% if not loop.last %}, {% endif %}
-                            {% endfor %}
-                        {% else %}
-                            {{ v }}
-                        {% endif %}
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <div class="muted">No Item loaded for this row.</div>
+                <!-- Weight per Item Start -->
+                <tr>
+                    <td style="width:40%">{{ _("Gross Weight (per unit)") }}</td>
+                    <td>{{ frappe.utils.flt(item.weight_per_unit, 3) }} {{ wuom or "" }}</td>
+                </tr>
+                <!-- Weight per Item End -->
                 {% endif %}
+                
+                {% include "eb_invoice_templates/templates/includes/debug.html" ignore missing %}
 
                 <tr>
                     <td>
@@ -99,50 +63,49 @@
                             </thead>
                            
                         </table>
+
                         {% elif row.batch_no %}
-  {# define batch_doc here! #}
-  {% set batch_doc = frappe.get_cached_doc("Batch", row.batch_no) %}
+                        {# define batch_doc here! #}
+                        {% set batch_doc = frappe.get_cached_doc("Batch", row.batch_no) %}
+                        
+                        {# inputs #}
+                        {% set plato = frappe.utils.flt(batch_doc.custom_plato) %}
+                        {% set rate_per_l = frappe.utils.flt((item and item.custom_excise_rate) or 0) %}
+                        {% set vol_l = frappe.utils.flt((item and item.custom_volume) or 0) %}
+                        {% set liters_row = frappe.utils.flt(row.qty or 0) * vol_l %}
 
-  {# inputs #}
-  {% set plato = frappe.utils.flt(batch_doc.custom_plato) %}
-  {% set rate_per_l = frappe.utils.flt((item and item.custom_excise_rate) or 0) %}
-  {% set vol_l = frappe.utils.flt((item and item.custom_volume) or 0) %}
-  {% set liters_row = frappe.utils.flt(row.qty or 0) * vol_l %}
+                        {# per-L excise is plato × per-L rate (no hL conversion) #}
+                        {% set per_l = plato * rate_per_l %}
+                        {% set excise_row = per_l * liters_row %}
 
-  {# per-L excise is plato × per-L rate (no hL conversion) #}
-  {% set per_l = plato * rate_per_l %}
-  {% set excise_row = per_l * liters_row %}
+                        <table class="table table-bordered table-compact" style="margin-top:6px;">
+                            <thead>
+                            <tr>
+                                <th style="text-align:left;">{{ _("Batch No") }}</th>
+                                <th style="text-align:right;">{{ _("Batch Qty") }}</th>
+                                <th style="text-align:left;">{{ _("Expiry") }}</th>
+                                <th>{{ _("Plato") }}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td>{{ row.batch_no }}</td>
+                                <td class="num">{{ row.qty or 0 }}</td>
+                                <td>{{ batch_doc.expiry_date or "" }}</td>
+                                <td>{{ batch_doc.custom_plato or "" }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
 
-  <table class="table table-bordered table-compact" style="margin-top:6px;">
-    <thead>
-      <tr>
-        <th style="text-align:left;">{{ _("Batch No") }}</th>
-        <th style="text-align:right;">{{ _("Batch Qty") }}</th>
-        <th style="text-align:left;">{{ _("Expiry") }}</th>
-        <th>{{ _("Plato") }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ row.batch_no }}</td>
-        <td class="num">{{ row.qty or 0 }}</td>
-        <td>{{ batch_doc.expiry_date or "" }}</td>
-        <td>{{ batch_doc.custom_plato or "" }}</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="micro" style="margin-top:4px;">
-    <b>{{ _("Excise (this row)") }}:</b>
-    {{ frappe.utils.fmt_money(excise_row, currency=None, precision=6) }} {{ doc.currency }}
-    <span class="muted">
-      ({{ frappe.utils.flt(liters_row, 3) }} L ×
-       {{ frappe.utils.fmt_money(per_l, currency=None, precision=6) }} {{ doc.currency }}/L)
-    </span>
-  </div>
-{% endif %}
-
-
+                        <div class="micro" style="margin-top:4px;">
+                            <b>{{ _("Excise (this row)") }}:</b>
+                            {{ frappe.utils.fmt_money(excise_row, currency=None, precision=6) }} {{ doc.currency }}
+                            <span class="muted">
+                            ({{ frappe.utils.flt(liters_row, 3) }} L ×
+                            {{ frappe.utils.fmt_money(per_l, currency=None, precision=6) }} {{ doc.currency }}/L)
+                            </span>
+                        </div>
+                        {% endif %}
 
                         {# --- per-item micro details (keep your exact properties) --- #}
                         <div class="micro" style="margin-top:6px;">

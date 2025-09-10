@@ -31,53 +31,53 @@
                 {% for row in doc.items %}
                 {% set item = frappe.get_cached_doc("Item", row.item_code) if row.item_code else None %}
                     {% if item %}
-  {% set meta = frappe.get_meta("Item") %}
+                {% set meta = frappe.get_meta("Item") %}
 
-  {# Core (non-table) fields #}
-  <table class="table table-bordered table-compact" style="margin-top:6px;">
-    <thead><tr><th colspan="2">Item {{ item.name }} — fields</th></tr></thead>
-    <tbody>
-      <tr><td>name</td><td>{{ item.name }}</td></tr>
-      {% for f in meta.fields if f.fieldtype not in ["Table", "Table MultiSelect"] %}
-        {% set val = item.get(f.fieldname) %}
-        {% if val not in (None, "") %}
-          <tr>
-            <td>{{ f.label }} <span class="muted">({{ f.fieldname }})</span></td>
-            <td>{{ item.get_formatted(f.fieldname) if item.get_formatted else val }}</td>
-          </tr>
-        {% endif %}
-      {% endfor %}
-    </tbody>
-  </table>
+                {# Core (non-table) fields #}
+                <table class="table table-bordered table-compact" style="margin-top:6px;">
+                    <thead><tr><th colspan="2">Item {{ item.name }} — fields</th></tr></thead>
+                    <tbody>
+                    <tr><td>name</td><td>{{ item.name }}</td></tr>
+                    {% for f in meta.fields if f.fieldtype not in ["Table", "Table MultiSelect"] %}
+                        {% set val = item.get(f.fieldname) %}
+                        {% if val not in (None, "") %}
+                        <tr>
+                            <td>{{ f.label }} <span class="muted">({{ f.fieldname }})</span></td>
+                            <td>{{ item.get_formatted(f.fieldname) if item.get_formatted else val }}</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
 
-  {# Child tables (show all rows, all columns) #}
-  {% for f in meta.fields if f.fieldtype in ["Table", "Table MultiSelect"] %}
-    {% set rows = item.get(f.fieldname) or [] %}
-    {% if rows %}
-      {% set child_meta = frappe.get_meta(f.options) %}
-      <h5 style="margin-top:8px;">{{ f.label }} <span class="muted">({{ f.options }})</span></h5>
-      {% for r in rows %}
-        {% set rd = r.as_dict() if r.as_dict else r %}
-        <table class="table table-bordered table-compact" style="margin-top:4px;">
-          <tbody>
-            <tr><td>name</td><td>{{ rd.get("name") }}</td></tr>
-            {% for cf in child_meta.fields %}
-              {% set cval = rd.get(cf.fieldname) %}
-              {% if cval not in (None, "") %}
-                <tr>
-                  <td>{{ cf.label }} <span class="muted">({{ cf.fieldname }})</span></td>
-                  <td>{{ cval }}</td>
-                </tr>
-              {% endif %}
-            {% endfor %}
-          </tbody>
-        </table>
-      {% endfor %}
-    {% endif %}
-  {% endfor %}
-{% else %}
-  <div class="muted">No Item loaded for this row.</div>
-{% endif %}
+                {# Child tables (show all rows, all columns) #}
+                {% for f in meta.fields if f.fieldtype in ["Table", "Table MultiSelect"] %}
+                    {% set rows = item.get(f.fieldname) or [] %}
+                    {% if rows %}
+                    {% set child_meta = frappe.get_meta(f.options) %}
+                    <h5 style="margin-top:8px;">{{ f.label }} <span class="muted">({{ f.options }})</span></h5>
+                    {% for r in rows %}
+                        {% set rd = r.as_dict() if r.as_dict else r %}
+                        <table class="table table-bordered table-compact" style="margin-top:4px;">
+                        <tbody>
+                            <tr><td>name</td><td>{{ rd.get("name") }}</td></tr>
+                            {% for cf in child_meta.fields %}
+                            {% set cval = rd.get(cf.fieldname) %}
+                            {% if cval not in (None, "") %}
+                                <tr>
+                                <td>{{ cf.label }} <span class="muted">({{ cf.fieldname }})</span></td>
+                                <td>{{ cval }}</td>
+                                </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                        </table>
+                    {% endfor %}
+                    {% endif %}
+                {% endfor %}
+                {% else %}
+                <div class="muted">No Item loaded for this row.</div>
+                {% endif %}
 
 
                 {% for row in doc.items %}
@@ -192,6 +192,8 @@
                     <td class="value">{{ doc.get_formatted("rounded_total") }}</td>
                 </tr>
                 {% endif %}
+
+
             </tbody>
         </table>
 

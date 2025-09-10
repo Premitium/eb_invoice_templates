@@ -39,9 +39,7 @@
                 </tr>
                 <!-- Weight per Item End -->
                 {% endif %}
-                
                 {% include "eb_invoice_templates/templates/includes/debug.html" ignore missing %}
-
                 <tr>
                     <td>
                         <div class="item-name">{{ row.item_name or row.item_code }}</div>
@@ -143,7 +141,6 @@
                 {% endfor %}
             </tbody>
         </table>
-
         <table class="table totals pull-right">
             <tbody>
                 <tr>
@@ -164,6 +161,7 @@
                     <td class="value">{{ doc.get_formatted("rounded_total") }}</td>
                 </tr>
                 {% endif %}
+                {% include "eb_invoice_templates/templates/includes/total_weight.html" ignore missing %}
             </tbody>
         </table>
 

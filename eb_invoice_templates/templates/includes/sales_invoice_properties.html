@@ -1,0 +1,43 @@
+{# --- DEBUG: Sales Invoice fields & values --- #}
+{% set DEBUG = 1 %}
+{% if DEBUG %}
+  {% set meta = frappe.get_meta(doc.doctype) %}
+  <h4 style="margin-top:10px;">DEBUG · {{ doc.doctype }} fields (custom first)</h4>
+  <table class="table table-bordered table-compact">
+    <thead>
+      <tr>
+        <th>Fieldname</th>
+        <th>Label</th>
+        <th>Type</th>
+        <th>Precision</th>
+        <th>Read Only</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {# custom_* first #}
+      {% for f in meta.fields if f.fieldname and f.fieldname[:7] == 'custom_' %}
+      <tr>
+        <td><code>{{ f.fieldname }}</code></td>
+        <td>{{ f.label }}</td>
+        <td>{{ f.fieldtype }}</td>
+        <td>{{ f.precision or '' }}</td>
+        <td>{{ 'Yes' if f.read_only else 'No' }}</td>
+        <td>{{ doc.get(f.fieldname) }}</td>
+      </tr>
+      {% endfor %}
+
+      {# non-custom afterwards (optional; comment this block out if too verbose) #}
+      {% for f in meta.fields if f.fieldname and f.fieldname[:7] != 'custom_' %}
+      <tr>
+        <td><code>{{ f.fieldname }}</code></td>
+        <td>{{ f.label }}</td>
+        <td>{{ f.fieldtype }}</td>
+        <td>{{ f.precision or '' }}</td>
+        <td>{{ 'Yes' if f.read_only else 'No' }}</td>
+        <td>{{ doc.get(f.fieldname) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}

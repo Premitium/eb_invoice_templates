@@ -125,6 +125,7 @@
                                         <td style="width:40%">{{ _("Volume") }}</td>
                                         <td>{{ (item and item.custom_volume) or "" }}</td>
                                     </tr>
+
                                     <tr>
                                         <td style="width:40%">{{ _("Country of Origin") }}</td>
                                         <td>{{ (item and item.country_of_origin) or "" }}</td>
@@ -162,6 +163,7 @@
                 </tr>
                 {% endif %}
                 {% include "eb_invoice_templates/templates/includes/total_weight.html" ignore missing %}
+                {% include "eb_invoice_templates/templates/includes/sales_invoice_properties.html" ignore missing %}
             </tbody>
         </table>
 
@@ -172,3 +174,15 @@
         {% endif %}
     </div>
 </div>
+
+{% set total_w = (doc.items | map(attribute='custom_total_weight_kg_at_20c') | select | sum) %}
+<tr>
+  <td class="label">{{ _("Total Weight @20°C") }}</td>
+  <td class="value">{{ frappe.utils.flt(total_w, 3) }} {{ _("kg") }}</td>
+</tr>
+{% set total_w1 = (doc.items | map(attribute='custom_weight_kg_at_20c') | select | sum) %}
+<tr>
+  <td class="label">{{ _("Item Weight @20°C") }}</td>
+  <td class="value">{{ frappe.utils.flt(total_w1, 3) }} {{ _("kg") }}</td>
+</tr>
+

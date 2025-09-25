@@ -47,61 +47,10 @@
         <div>{{ _("Issue Date") }}: {{ doc.get_formatted("posting_date") }}</div>
         <div>{{ _("Payment Due Date") }}: {{ doc.get_formatted("due_date") }}</div>
         <div>{{ _("Tax Event Date Date") }}: {{ doc.get_formatted("tax_event_date") }}</div>
-
-       {# --- collect company bank accounts --- #}
-        {% set bank_accounts = frappe.get_all(
-            "Bank Account",
-            filters={"company": doc.company, "is_company_account": 1},
-            fields=["name","is_default","bank","account_name",
-                    "bank_account_no","iban"]
-        ) %}
-
-        {# account selected on the invoice (if any) #}
-        {% set selected_ba = doc.company_bank_account or doc.bank_account %}
-
-        {% if bank_accounts %}
-        <div style="margin-top:10px;">
-            <strong>{{ _("Company Bank Accounts") }}</strong>
-            <ul style="margin:6px 0 0 16px;">
-            {% for ba in bank_accounts %}
-                {% set banknm = ba.bank or ba.bank_name %}
-                {% set bank_doc = ba.bank and frappe.get_cached_doc("Bank", ba.bank) %}
-                {% set swift = bank_doc and bank_doc.swift %}
-                <li style="margin-bottom:6px;">
-                {% if selected_ba == ba.name %}<b>[{{ _("Selected") }}]</b> {% elif ba.is_default %}<b>[{{ _("Default") }}]</b> {% endif %}
-                <b>{{ holder or doc.company }}</b>
-                {% if banknm %} — {{ banknm }}{% endif %}
-                {% if ba.iban %} — IBAN: {{ ba.iban }}{% endif %}
-                {% if swift %} — SWIFT/BIC: {{ swift }}{% endif %}
-                {% if ba.bank_address %}
-                    <br><span class="muted">{{ ba.bank_address | replace("\n","<br>") | safe }}</span>
-                {% endif %}
-                </li>
-            {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-
-
-        <!-- {# Resolve the bank account name #}
-        {% set ba_name = doc.company_bank_account or doc.bank_account %}  {# if chosen on the invoice #}
-        {% if not ba_name and doc.debit_to %}
-        {% set acc = frappe.get_cached_doc("Account", doc.debit_to) %}
-        {% set ba_name = acc.default_bank_account %}
-        {% endif %}
-
-        {# Render basic label or full details #}
-        {% if ba_name %}
-        {% set ba = frappe.get_cached_doc("Bank Account", ba_name) %}
-        <div>
-            {{ _("Bank Account") }}:
-            {{ ba.account_name or ba.account_holder_name or ba_name }}
-            {% if ba.iban %} — IBAN: {{ ba.iban }}{% endif %}
-            {% if ba.account_no %} — {{ _("Account No.") }}: {{ ba.account_no }}{% endif %}
-            {% if ba.swift_number or ba.swift_code %} — SWIFT/BIC: {{ ba.swift_number or ba.swift_code }}{% endif %}
-        </div>
-        {% endif %} -->
-
+        
+        <!-- BANK Details -->
+        {{ eb_bank_block(doc) | safe }}
+         <!-- BANK Details -->
         <div class="meta grid-3">
             <div>{{ _("Customer") }}: {{ doc.customer_name or doc.customer }}</div>
             {% set customer = doc.customer and frappe.get_cached_doc("Customer", doc.customer) %}

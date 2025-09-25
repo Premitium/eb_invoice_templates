@@ -19,6 +19,22 @@ fixtures = [
     ]]]},
 ]
 
+# add this near the top-level (or extend existing jinja config)
+jinja = {
+    "methods": [
+        "eb_invoice_templates.utils.bank.eb_bank_block",
+        "eb_invoice_templates.utils.bank.eb_bank_details",
+        "eb_invoice_templates.utils.bank.resolve_bank_account_name",
+    ]
+}
+# compatibility for older Frappe keys
+jinja_methods = [
+    "eb_invoice_templates.utils.bank.eb_bank_block",
+    "eb_invoice_templates.utils.bank.eb_bank_details",
+    "eb_invoice_templates.utils.bank.resolve_bank_account_name",
+]
+
+
 # safety net: ensure PF exists & default is set when installing/migrating
 aafter_install = "eb_invoice_templates.install.after_install"
 after_migrate = ["eb_invoice_templates.install.ensure_print_format_default"]

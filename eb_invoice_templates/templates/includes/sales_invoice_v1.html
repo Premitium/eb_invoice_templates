@@ -8,16 +8,123 @@
 
 <div class="print-format">
 
+    {# --- Issuer (Company) details --- #}
+    {% set company = frappe.get_doc("Company", doc.company) %}
+
+    <div class="issuer-company" style="margin-top:8px;">
+    <strong>{{ company.company_name or doc.company }}</strong><br>
+
+        {# 1) Prefer the address captured on the invoice (fastest & safest) #}
+        {% if doc.company_address_display %}
+            {{ (doc.company_address_display or "") | replace("\n","<br>") | safe }}
+        {% else %}
+        {# 2) Fallback: first Address linked to this Company #}
+        {% set links = frappe.get_all(
+            "Dynamic Link",
+            filters={"parenttype":"Address","link_doctype":"Company","link_name":doc.company},
+            fields=["parent"],
+            limit=1
+        ) %}
+        {% if links %}
+        {% set comp_addr = frappe.get_doc("Address", links[0].parent) %}
+        {{ comp_addr.address_line1 or "" }}{% if comp_addr.address_line2 %}<br>{{ comp_addr.address_line2 }}{% endif %}
+        {% if comp_addr.pincode or comp_addr.city %}<br>
+            {{ comp_addr.pincode or "" }} {{ comp_addr.city or "" }}
+        {% endif %}
+        {% if comp_addr.country %}<br>{{ comp_addr.country }}{% endif %}
+        {% if comp_addr.phone %}<br>{{ _("Phone") }}: {{ comp_addr.phone }}{% endif %}
+        {% if comp_addr.email_id %}<br>{{ comp_addr.email_id }}{% endif %}
+        {% endif %}
+        {% endif %}
+
+        {# Optional extras printed if present on Company #}
+        {% if company.tax_id %}<br>{{ _("VAT") }}: {{ company.tax_id }}{% endif %}
+    </div>
+
+
     <div class="invoice">
-        <h2>{{ _(doc.company) }}</h2>
         <h3>{{ _("Sales Invoice") }} {{ doc.name }}</h3>
+        <div>{{ _("Issue Date") }}: {{ doc.get_formatted("posting_date") }}</div>
+        <div>{{ _("Payment Due Date") }}: {{ doc.get_formatted("due_date") }}</div>
+        <div>{{ _("Tax Event Date Date") }}: {{ doc.get_formatted("tax_event_date") }}</div>
+
+       {# --- collect company bank accounts --- #}
+        {% set bank_accounts = frappe.get_all(
+            "Bank Account",
+            filters={"company": doc.company, "is_company_account": 1},
+            fields=["name","is_default","bank","account_name",
+                    "bank_account_no","iban"]
+        ) %}
+
+        {# account selected on the invoice (if any) #}
+        {% set selected_ba = doc.company_bank_account or doc.bank_account %}
+
+        {% if bank_accounts %}
+        <div style="margin-top:10px;">
+            <strong>{{ _("Company Bank Accounts") }}</strong>
+            <ul style="margin:6px 0 0 16px;">
+            {% for ba in bank_accounts %}
+                {% set banknm = ba.bank or ba.bank_name %}
+                {% set bank_doc = ba.bank and frappe.get_cached_doc("Bank", ba.bank) %}
+                {% set swift = bank_doc and bank_doc.swift %}
+                <li style="margin-bottom:6px;">
+                {% if selected_ba == ba.name %}<b>[{{ _("Selected") }}]</b> {% elif ba.is_default %}<b>[{{ _("Default") }}]</b> {% endif %}
+                <b>{{ holder or doc.company }}</b>
+                {% if banknm %} — {{ banknm }}{% endif %}
+                {% if ba.iban %} — IBAN: {{ ba.iban }}{% endif %}
+                {% if swift %} — SWIFT/BIC: {{ swift }}{% endif %}
+                {% if ba.bank_address %}
+                    <br><span class="muted">{{ ba.bank_address | replace("\n","<br>") | safe }}</span>
+                {% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+
+        <!-- {# Resolve the bank account name #}
+        {% set ba_name = doc.company_bank_account or doc.bank_account %}  {# if chosen on the invoice #}
+        {% if not ba_name and doc.debit_to %}
+        {% set acc = frappe.get_cached_doc("Account", doc.debit_to) %}
+        {% set ba_name = acc.default_bank_account %}
+        {% endif %}
+
+        {# Render basic label or full details #}
+        {% if ba_name %}
+        {% set ba = frappe.get_cached_doc("Bank Account", ba_name) %}
+        <div>
+            {{ _("Bank Account") }}:
+            {{ ba.account_name or ba.account_holder_name or ba_name }}
+            {% if ba.iban %} — IBAN: {{ ba.iban }}{% endif %}
+            {% if ba.account_no %} — {{ _("Account No.") }}: {{ ba.account_no }}{% endif %}
+            {% if ba.swift_number or ba.swift_code %} — SWIFT/BIC: {{ ba.swift_number or ba.swift_code }}{% endif %}
+        </div>
+        {% endif %} -->
 
         <div class="meta grid-3">
-            <div>{{ _("Posting Date") }}: {{ doc.get_formatted("posting_date") }}</div>
             <div>{{ _("Customer") }}: {{ doc.customer_name or doc.customer }}</div>
-            {% if doc.tax_id %}<div>{{ _("VAT No.") }}: {{ doc.tax_id }}</div>{% endif %}
+            {% set customer = doc.customer and frappe.get_cached_doc("Customer", doc.customer) %}
+            <div>
+                {{ _("EIK No.") }}: {{ customer.custom_eik }}
+            </div>
+            <div>
+                {{ _("VAT No.") }}: {{ customer.custom_vat_number }}
+            </div>
+            <div>
+                {{ _("Address") }}: {{ customer.primary_address }}
+            </div>
+            <div>
+                {{ _("MOL") }}: {{ customer.materially_responsible_person }}
+            </div>
+            <div>
+                {{ _("EMCS Tax No") }}: {{ customer.emcs_tax_number }}
+            </div>
+            <div>
+               {{ _("EMCS Trader No") }}: {{ customer.emcs_trader_number }}
+            </div>
         </div>
-
+        
         <table class="table table-bordered table-compact items">
             <thead>
                 <tr>
@@ -39,7 +146,7 @@
                 </tr>
                 <!-- Weight per Item End -->
                 {% endif %}
-                {% include "eb_invoice_templates/templates/includes/debug.html" ignore missing %}
+                <!-- {% include "eb_invoice_templates/templates/includes/debug.html" ignore missing %} -->
                 <tr>
                     <td>
                         <div class="item-name">{{ row.item_name or row.item_code }}</div>

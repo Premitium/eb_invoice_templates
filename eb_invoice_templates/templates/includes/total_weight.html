@@ -21,7 +21,7 @@
   {% if not ns.uom and wuom %}{% set ns.uom = wuom %}{% endif %}
 {% endfor %}
 
-<tr class="grand">
-                    <td class="label"><strong>{{ _("Total Gross Weight") }}</strong></td>
-                    <td class="value"><strong>{{ frappe.utils.flt(ns.total, 3) }} {{ ns.uom }}</strong></td>
+<tr>
+  <td class="label">{{ _("Total Gross Weight") }}</td>
+  <td class="value">{{ frappe.utils.flt(ns.total, 3) }} {{ ns.uom }}</td>
 </tr>

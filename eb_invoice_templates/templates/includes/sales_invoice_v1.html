@@ -1,13 +1,11 @@
 <div style="font-size:10px;color:#999;">TEMPLATE: EB v2</div>
 
 <style>
-    {
-        % include "eb_invoice_templates/templates/includes/_invoice.css" ignore missing %
-    }
+    {% include "eb_invoice_templates/templates/includes/_invoice.css" ignore missing %}
+    {% include "eb_invoice_templates/templates/includes/print_a4.css" ignore missing %}
 </style>
 
 <div class="print-format">
-
     {# --- Issuer (Company) details --- #}
     {% set company = frappe.get_doc("Company", doc.company) %}
 
@@ -86,39 +84,13 @@
             <tbody>
 
                 {% for row in doc.items %}
+                <!-- Used for Tariff section -->
                 {% set item = frappe.get_cached_doc("Item", row.item_code) if row.item_code else None %}
-                {% if item %}
-                <!-- Weight per Item Start -->
-                <tr>
-                    <td style="width:40%">{{ _("Gross Weight (per unit)") }}</td>
-                    <td>{{ frappe.utils.flt(item.weight_per_unit, 3) }} {{ wuom or "" }}</td>
-                </tr>
-                <!-- Weight per Item End -->
-                {% endif %}
-                <!-- {% include "eb_invoice_templates/templates/includes/debug.html" ignore missing %} -->
+               
+                
                 <tr>
                     <td>
                         <div class="item-name">{{ row.item_name or row.item_code }}</div>
-                        {% if row.description %}
-                        <div class="desc">{{ row.description | striptags }}</div>
-                        {% endif %}
-
-                        {# --- Batches (Serial and Batch Bundle preferred) --- #}
-                        {% if row.serial_and_batch_bundle %}
-                        {% set bundle = frappe.get_doc("Serial and Batch Bundle", row.serial_and_batch_bundle) %}
-                        <table class="table table-bordered table-compact" style="margin-top:6px;">
-                            <thead>
-                                <tr>
-                                    <th style="text-align:left;">{{ _("Batch No") }}</th>
-                                    <th style="text-align:right;">{{ _("Batch Qty") }}</th>
-                                    <th style="text-align:left;">{{ _("Expiry") }}</th>
-                                    <th>{{ _("Plato") }}<br><span class="muted">custom_plato</span></th>
-                                </tr>
-                            </thead>
-                           
-                        </table>
-
-                        {% elif row.batch_no %}
                         {# define batch_doc here! #}
                         {% set batch_doc = frappe.get_cached_doc("Batch", row.batch_no) %}
                         
@@ -131,25 +103,8 @@
                         {# per-L excise is plato × per-L rate (no hL conversion) #}
                         {% set per_l = plato * rate_per_l %}
                         {% set excise_row = per_l * liters_row %}
-
-                        <table class="table table-bordered table-compact" style="margin-top:6px;">
-                            <thead>
-                            <tr>
-                                <th style="text-align:left;">{{ _("Batch No") }}</th>
-                                <th style="text-align:right;">{{ _("Batch Qty") }}</th>
-                                <th style="text-align:left;">{{ _("Expiry") }}</th>
-                                <th>{{ _("Plato") }}</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr>
-                                <td>{{ row.batch_no }}</td>
-                                <td class="num">{{ row.qty or 0 }}</td>
-                                <td>{{ batch_doc.expiry_date or "" }}</td>
-                                <td>{{ batch_doc.custom_plato or "" }}</td>
-                            </tr>
-                            </tbody>
-                        </table>
+                       
+                        
 
                         <div class="micro" style="margin-top:4px;">
                             <b>{{ _("Excise (this row)") }}:</b>
@@ -159,7 +114,7 @@
                             {{ frappe.utils.fmt_money(per_l, currency=None, precision=6) }} {{ doc.currency }}/L)
                             </span>
                         </div>
-                        {% endif %}
+                     
 
                         {# --- per-item micro details (keep your exact properties) --- #}
                         <div class="micro" style="margin-top:6px;">
@@ -181,11 +136,41 @@
                                         <td style="width:40%">{{ _("Volume") }}</td>
                                         <td>{{ (item and item.custom_volume) or "" }}</td>
                                     </tr>
-
+                                    <tr>
+                                        <td style="width:40%">{{ _("Gross Weight Per Unit") }}</td>
+                                        <td>{{ (item and item.weight_per_unit) or "" }}</td>  
+                                    </tr>
+                                    <tr>
+                                        <td style="width:40%">{{ _("Net Weight Per Unit") }}</td>
+                                        <td>{{ (item and item.custom_net_volume) or "" }}</td>  
+                                    </tr>
                                     <tr>
                                         <td style="width:40%">{{ _("Country of Origin") }}</td>
                                         <td>{{ (item and item.country_of_origin) or "" }}</td>
                                     </tr>
+                                    <tr>
+                                        <td style="width:40%">{{ _("Batch Number") }}</td>
+                                        <td>{{ row.batch_no }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="width:40%">{{ _("Expiry") }}</td>
+                                       <td>{{ batch_doc.expiry_date or "" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="width:40%">{{ _("Plato") }}</td>
+                                        <td>{{ batch_doc.custom_plato or "" }}</td>
+                                    </tr>
+                                    {% set total_w = (doc.items | map(attribute='custom_total_weight_kg_at_20c') | select | sum) %}
+                                    <tr>
+                                    <td class="label">{{ _("Total Weight @20°C") }}</td>
+                                    <td class="value">{{ frappe.utils.flt(total_w, 3) }} {{ _("kg") }}</td>
+                                    </tr>
+                                    {% set total_w1 = (doc.items | map(attribute='custom_weight_kg_at_20c') | select | sum) %}
+                                    <tr>
+                                    <td class="label">{{ _("Item Weight @20°C") }}</td>
+                                    <td class="value">{{ frappe.utils.flt(total_w1, 3) }} {{ _("kg") }}</td>
+                                    </tr>
+                                                            
                                 </tbody>
                             </table>
                         </div>
@@ -219,7 +204,7 @@
                 </tr>
                 {% endif %}
                 {% include "eb_invoice_templates/templates/includes/total_weight.html" ignore missing %}
-                {% include "eb_invoice_templates/templates/includes/sales_invoice_properties.html" ignore missing %}
+                <!-- {% include "eb_invoice_templates/templates/includes/sales_invoice_properties.html" ignore missing %} -->
             </tbody>
         </table>
 
@@ -230,15 +215,4 @@
         {% endif %}
     </div>
 </div>
-
-{% set total_w = (doc.items | map(attribute='custom_total_weight_kg_at_20c') | select | sum) %}
-<tr>
-  <td class="label">{{ _("Total Weight @20°C") }}</td>
-  <td class="value">{{ frappe.utils.flt(total_w, 3) }} {{ _("kg") }}</td>
-</tr>
-{% set total_w1 = (doc.items | map(attribute='custom_weight_kg_at_20c') | select | sum) %}
-<tr>
-  <td class="label">{{ _("Item Weight @20°C") }}</td>
-  <td class="value">{{ frappe.utils.flt(total_w1, 3) }} {{ _("kg") }}</td>
-</tr>
 

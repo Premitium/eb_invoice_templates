@@ -1,0 +1,75 @@
+/* print_a4.css — A4 fit + compact print layout */
+@media print {
+  /* A4 page box */
+  @page {
+    size: A4 portrait;
+    margin: 10mm; /* adjust if needed */
+  }
+
+  /* Help some engines calculate pagination */
+  html, body {
+    width: 210mm;
+    height: 297mm;
+  }
+
+  /* Compact overall scale for print */
+  .invoice {
+    font-size: 9pt !important; /* overrides your 12px for print only */
+    page-break-inside: avoid;
+  }
+
+  /* Meta grid stays 3 columns but tighter gaps */
+  .meta {
+    margin: 3mm 0 5mm !important;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2mm 4mm !important;
+  }
+
+  /* Tables: compact padding, stable borders, no split rows */
+  .items {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .items th,
+  .items td {
+    border-bottom: 1px solid #ddd;
+    padding: 2mm 2mm !important;  /* was 6px 4px */
+    vertical-align: top;
+  }
+
+  /* Repeat header on new pages */
+  .items thead { display: table-header-group; }
+  .items tr { page-break-inside: avoid; }
+
+  /* Numbers stay compact and unbroken */
+  .num { text-align: right; white-space: nowrap; }
+
+  /* Totals block: keep to the right and compact */
+  .totals {
+    margin-top: 4mm !important;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2mm 6mm !important;
+    break-inside: avoid;
+  }
+  .totals .grand {
+    font-weight: 700;
+    border-top: 2px solid #000;
+    padding-top: 2mm;
+    margin-top: 1mm;
+  }
+
+  /* Optional: shrink fine-print details in your template (if present) */
+  .micro { font-size: 8pt; color: #666; }
+
+  /* If you still overflow, you can hide verbose sections:
+     .micro { display: none !important; }
+  */
+}
+
+/* Optional: screen nicety so the on-screen width mirrors A4 */
+@media screen {
+  .print-format { max-width: 210mm; margin: 0 auto; }
+}

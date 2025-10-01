@@ -1,0 +1,53 @@
+{# ensure we have the Item doc #}
+
+{% set item = row.item_code and frappe.get_cached_doc("Item", row.item_code) %}
+
+{% set batch_doc = None %}
+{% if row.batch_no %}
+  {% set batch_doc = frappe.get_cached_doc("Batch", row.batch_no) %}
+  {% set batch_expirity_date = frappe.get_cached_doc("Batch", row.expiry_date) %}
+{% endif %}  
+{# gather values with sane fallbacks #}
+{% set packaging = (row.get("custom_container") if row else None)
+                   or (item and (item.get("custom_container_type") or item.get("custom_container"))) %}
+{% set net_volume = item.custom_net_volume %}
+{% set gross_w = item.weight_per_unit %}
+{% set w_uom = item and item.get("weight_uom") or "" %}
+{% set w20 = (batch_doc and batch_doc.get("custom_weight_kg_at_20c"))
+             or (item and item.get("custom_weight_kg_at_20c")) %}
+{% set tariff = item and (item.get("customs_tariff_number") or item.get("custom_tariff_number") or item.get("custom_tariff")) %}
+{% set abv = (batch_doc and batch_doc.get("custom_abv")) or (item and item.get("custom_abv")) %}
+{% set plato = (batch_doc and batch_doc.get("custom_plato")) or (item and item.get("custom_plato")) %}
+{% set origin = item and item.get("country_of_origin") %}
+
+{# barcode: prefer item.ean / item.barcode; fallback to first child row in Barcodes #}
+{% set bc = item and (item.get("ean") or item.get("barcode")) %}
+{% if (not bc) and item and item.get("barcodes") %}
+  {% for b in item.barcodes %}
+    {% if b.get("barcode") and (not bc) %}
+      {% set bc = b.get("barcode") %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+{# render the cell #}
+<td>
+  <div class="item-name">{{ row.item_name or row.item_code }}</div>
+  <!-- {% if row.description %}
+    <div class="muted" style="font-size:10px;">{{ row.description | striptags }}</div>
+  {% endif %} -->
+  <ul style="margin:6px 0 0 16px; padding:0; list-style:disc;">
+    {% if packaging %}<li>{{ _("Packaging") }}: {{ packaging }}</li>{% endif %}
+    {% if net_volume is not none %}<li>{{ _("Net Volume") }}: {{ frappe.utils.flt(net_volume, 3) }} {{ w_uom }}</li>{% endif %}
+    {% if gross_w is not none %}<li>{{ _("Gross Weight") }}: {{ frappe.utils.flt(gross_w, 3) }} {{ w_uom }}</li>{% endif %}
+    {% if w20 is not none %}<li>{{ _("Weight @20°C") }}: {{ frappe.utils.flt(w20, 3) }} {{ w_uom or "kg" }}</li>{% endif %}
+    {% if tariff %}<li>{{ _("Tariff Code") }}: {{ tariff }}</li>{% endif %}
+    {% if abv is not none %}<li>{{ _("ABV") }}: {{ frappe.utils.flt(abv, 2) }}%</li>{% endif %}
+    {% if plato is not none %}<li>{{ _("Plato") }}: {{ frappe.utils.flt(plato, 2) }}°P</li>{% endif %}
+    {% if origin %}<li>{{ _("Country of Origin") }}: {{ origin }}</li>{% endif %}
+    {% if bc %}<li>{{ _("Barcode") }}: {{ bc }}</li>{% endif %}
+    {% if batch_doc %}<li>{{ _("Lot") }}: {{ batch_doc.name }}</li>{% endif %}
+    {% if batch_expirity_date %}<li>{{ _("Expirity date") }}: {{ batch_expirity_date.expiry_date }}</li>{% endif %}
+
+  </ul>
+</td>

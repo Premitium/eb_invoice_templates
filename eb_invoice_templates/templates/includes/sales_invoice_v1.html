@@ -71,6 +71,67 @@
                {{ _("EMCS Trader No") }}: {{ customer.emcs_trader_number }}
             </div>
         </div>
+
+        <table class="table table-bordered table-compact">
+        <!-- New invoice items table -->
+        <thead>
+            <tr>
+            <th style="width:6%">{{ _("No.") }}</th>
+            <th style="width:44%">{{ _("Description") }}</th>
+            <th class="num" style="width:16%">{{ _("Quantity Unit") }}</th>
+            <th class="num" style="width:16%">{{ _("Unit Price") }}</th>
+            <th class="num" style="width:18%">{{ _("Amount") }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {# accumulate totals + track UOMs #}
+            {% set ns = namespace(total_qty=0, uoms=[]) %}
+
+            {% for row in doc.items %}
+            <tr>
+            <td class="num">{{ loop.index }}</td>
+            
+            {% include "eb_invoice_templates/templates/includes/item_description.html" ignore missing %}
+            
+            <td class="num">{{ frappe.utils.flt(row.qty, 3) }} {{ row.uom or "" }}</td>
+            <td class="num">{{ row.get_formatted("rate") }}</td>
+            <td class="num">{{ row.get_formatted("amount") }}</td>
+            </tr>
+
+            {# update totals #}
+            {% set ns.total_qty = ns.total_qty + (row.qty or 0) %}
+            {% if row.uom and (row.uom not in ns.uoms) %}
+            {% set ns.uoms = ns.uoms + [row.uom] %}
+            {% endif %}
+            {% endfor %}
+        </tbody>
+
+        <tfoot>
+            {% set uom_label = ns.uoms[0] if ns.uoms|length == 1 else "" %}
+
+            <tr>
+            <td class="num" colspan="2"><strong>{{ _("Totals") }}</strong></td>
+            <td class="num"><strong>{{ frappe.utils.flt(ns.total_qty, 3) }} {{ uom_label }}</strong></td>
+            <td></td>
+            <td class="num"><strong>{{ doc.get_formatted("total") }}</strong></td>
+            </tr>
+            <tr>
+            <td colspan="4" class="text-right">{{ _("Taxes") }}</td>
+            <td class="num">{{ doc.get_formatted("total_taxes_and_charges") }}</td>
+            </tr>
+            <tr class="grand">
+            <td colspan="4" class="text-right"><strong>{{ _("Grand Total") }}</strong></td>
+            <td class="num"><strong>{{ doc.get_formatted("grand_total") }}</strong></td>
+            </tr>
+            {% if doc.rounded_total %}
+            <tr>
+            <td colspan="4" class="text-right">{{ _("Rounded Total") }}</td>
+            <td class="num">{{ doc.get_formatted("rounded_total") }}</td>
+            </tr>
+            {% endif %}
+        </tfoot>
+        </table>
+        <!-- New invoice items table END -->
         
         <table class="table table-bordered table-compact items">
             <thead>

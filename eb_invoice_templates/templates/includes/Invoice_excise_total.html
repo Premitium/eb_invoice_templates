@@ -1,0 +1,28 @@
+{# per-L excise is plato × per-L rate (no hL conversion) #}
+{% set per_l = plato * rate_per_l %}
+{% set excise_row = per_l * liters_row %}
+<div class="micro" style="margin-top:4px;">
+    <b>{{ _("Excise (this row)") }}:</b>
+        {{ frappe.utils.fmt_money(excise_row, currency=None, precision=6) }} {{ doc.currency }}
+        <span class="muted">
+            ({{ frappe.utils.flt(liters_row, 3) }} L ×
+            {{ frappe.utils.fmt_money(per_l, currency=None, precision=6) }} {{ doc.currency }}/L)
+        </span>
+</div>
+<tr>
+    <td>
+        {% set batch_doc = frappe.get_cached_doc("Batch", row.batch_no) %}
+        <div class="micro" style="margin-top:6px;">
+            <table class="table table-bordered table-compact">
+                <tbody>
+                    {% set total_w = (doc.items | map(attribute='custom_total_weight_kg_at_20c') | select | sum) %}
+                    <tr>
+                        <td class="label">{{ _("Total Weight @20°C") }}</td>
+                        <td class="value">{{ frappe.utils.flt(total_w, 3) }} {{ _("kg") }}</td>
+                    </tr>
+                    {% set total_w1 = (doc.items | map(attribute='custom_weight_kg_at_20c') | select | sum) %}
+                </tbody>
+            </table>
+        </div>
+    </td>
+</tr>

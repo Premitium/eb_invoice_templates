@@ -1,27 +1,29 @@
 {# --- Total Weight across all rows --- #}
-{% set ns = namespace(total=0.0, uom="") %}
-{% for r in doc.items %}
-  {# 1) pick per-unit weight and UOM: row -> item fallback #}
-  {% set wpu = r.weight_per_unit %}
-  {% set wuom = r.weight_uom %}
-  {% if (wpu is none) or (wpu == 0) %}
-    {% set it = r.item_code and frappe.get_cached_doc("Item", r.item_code) %}
-    {% set wpu = wpu if wpu not in (None, 0) else (it and it.weight_per_unit) %}
-    {% set wuom = wuom or (it and it.weight_uom) %}
-  {% endif %}
+{% set ns = namespace(total=0.0, uom=None) %}
 
-  {# 2) row total weight: use row.total_weight if present, else qty * wpu #}
+{% for r in doc.items %}
+  {# 1) per-unit weight + UOM (row first, then Item fallback) #}
+  {% set it   = r.item_code and frappe.get_cached_doc("Item", r.item_code) %}
+  {% set wpu  = r.weight_per_unit if r.weight_per_unit not in (None, 0) else (it and it.weight_per_unit) %}
+  {% set wuom = r.weight_uom or (it and it.weight_uom) %}
+
+  {# 2) row total weight: prefer r.total_weight, else qty * wpu #}
   {% if r.total_weight not in (None, 0) %}
     {% set row_wt = frappe.utils.flt(r.total_weight) %}
   {% else %}
     {% set row_wt = frappe.utils.flt(r.qty or 0) * frappe.utils.flt(wpu or 0) %}
   {% endif %}
 
-  {% set ns.total = ns.total + row_wt %}
+  {# 3) accumulate #}
+  {% set ns.total = ns.total + frappe.utils.flt(row_wt or 0) %}
   {% if not ns.uom and wuom %}{% set ns.uom = wuom %}{% endif %}
 {% endfor %}
 
-<tr>
-  <td class="label">{{ _("Total Gross Weight") }}</td>
-  <td class="value">{{ frappe.utils.flt(ns.total, 3) }} {{ ns.uom }}</td>
-</tr>
+<tfoot>
+  <tr>
+    <td colspan="4" class="text-right">{{ _("Total Gross Weight") }}</td>
+    <td class="value">
+      {{ frappe.utils.flt(ns.total, 3) }}&nbsp;{{ ns.uom or _("kg") }}
+    </td>
+  </tr>
+</tfoot>

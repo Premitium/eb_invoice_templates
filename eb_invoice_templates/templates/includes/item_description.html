@@ -13,8 +13,8 @@
 {% set net_volume = item.custom_net_volume %}
 {% set gross_w = item.weight_per_unit %}
 {% set w_uom = item and item.get("weight_uom") or "" %}
-{% set w20 = (batch_doc and batch_doc.get("custom_weight_kg_at_20c"))
-             or (item and item.get("custom_weight_kg_at_20c")) %}
+{% set w20 = (batch_doc and batch_doc.get("custom_weight_kg_at_20c")) %}
+Weight {{w20}}
 {% set tariff = item and (item.get("customs_tariff_number") or item.get("custom_tariff_number") or item.get("custom_tariff")) %}
 {% set abv = (batch_doc and batch_doc.get("custom_abv")) or (item and item.get("custom_abv")) %}
 {% set plato = (batch_doc and batch_doc.get("custom_plato")) or (item and item.get("custom_plato")) %}
@@ -48,6 +48,5 @@
     {% if bc %}<li>{{ _("Barcode") }}: {{ bc }}</li>{% endif %}
     {% if batch_doc %}<li>{{ _("Lot") }}: {{ batch_doc.name }}</li>{% endif %}
     {% if batch_expirity_date %}<li>{{ _("Expirity date") }}: {{ batch_expirity_date.expiry_date }}</li>{% endif %}
-
   </ul>
 </td>

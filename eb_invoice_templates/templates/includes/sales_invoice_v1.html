@@ -86,25 +86,63 @@
         <tbody>
             {# accumulate totals + track UOMs #}
             {% set ns = namespace(total_qty=0, uoms=[]) %}
+            {# sum of excise across rows (if you need it) #}
+            {% set sum_excise = namespace(total=0.0) %}
 
             {% for row in doc.items %}
-            <tr>
+            {# load Item and (optionally) Batch #}
+            {% set item = row.item_code and frappe.get_cached_doc("Item", row.item_code) %}
+            {% set batch_doc = None %}
+            {% if row.batch_no %}
+                {% set batch_doc = frappe.get_cached_doc("Batch", row.batch_no) %}
+            {% elif row.serial_and_batch_bundle %}
+                {% set bundle = frappe.get_doc("Serial and Batch Bundle", row.serial_and_batch_bundle) %}
+                {% for e in bundle.entries %}
+                {% if e.batch_no and (not batch_doc) %}
+                    {% set batch_doc = frappe.get_cached_doc("Batch", e.batch_no) %}
+                {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            {# inputs for Excise calculation per row #}
+            {% set rate_per_l = frappe.utils.flt((item and item.custom_excise_rate) or 0) %}
+            {% set vol_l      = frappe.utils.flt((item and (item.custom_net_volume or item.custom_volume)) or 0) %}
+            {% set liters_row = frappe.utils.flt(row.qty or 0) * vol_l %}
+            {% set plato      = frappe.utils.flt((batch_doc and batch_doc.custom_plato) or (item and item.custom_plato) or 0) %}
+
+            {# per-L and per-row excise #}
+            {% set per_l      = plato * rate_per_l %}
+            {% set excise_row = per_l * liters_row %}
+            {% set sum_excise.total = sum_excise.total + excise_row %}
+
+        <tr>
             <td class="num">{{ loop.index }}</td>
-            
+
+            {# DESCRIPTION CELL — your include must output a single <td>...</td> cell #}
             {% include "eb_invoice_templates/templates/includes/item_description.html" ignore missing %}
-            
+
             <td class="num">{{ frappe.utils.flt(row.qty, 3) }} {{ row.uom or "" }}</td>
             <td class="num">{{ row.get_formatted("rate") }}</td>
             <td class="num">{{ row.get_formatted("amount") }}</td>
-            </tr>
+        </tr>
 
-            {# update totals #}
-            {% set ns.total_qty = ns.total_qty + (row.qty or 0) %}
-            {% if row.uom and (row.uom not in ns.uoms) %}
-            {% set ns.uoms = ns.uoms + [row.uom] %}
-            {% endif %}
-            {% endfor %}
+        {# Optional: an extra row right under each item showing excise details #}
+        <tr>
+            <td></td>
+            <td colspan="4">
+            <div class="micro" style="margin-top:4px;">
+                <b>{{ _("Excise (this row)") }}:</b>
+                {{ frappe.utils.fmt_money(excise_row, currency=None, precision=6) }} {{ doc.currency }}
+                <span class="muted">
+                ({{ frappe.utils.flt(liters_row, 3) }} L ×
+                {{ frappe.utils.fmt_money(per_l, currency=None, precision=6) }} {{ doc.currency }}/L)
+                </span>
+            </div>
+            </td>
+        </tr>
+        {% endfor %}
         </tbody>
+
 
         <tfoot>
             {% set uom_label = ns.uoms[0] if ns.uoms|length == 1 else "" %}

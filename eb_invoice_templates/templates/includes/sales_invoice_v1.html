@@ -1,5 +1,8 @@
-<div style="font-size:10px;color:#999;">TEMPLATE: EB v2</div>
-
+{% if letter_head and not no_letterhead %}
+  <div class="letterhead">
+    {{ letter_head }}
+  </div>
+{% endif %}
 <style>
     {% include "eb_invoice_templates/templates/includes/_invoice.css" ignore missing %}
     {% include "eb_invoice_templates/templates/includes/print_a4.css" ignore missing %}

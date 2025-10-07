@@ -168,6 +168,12 @@
             </tr>
             {% endif %}
             {% include "eb_invoice_templates/templates/includes/total_weight.html" ignore missing %}
+            <tr>
+            <td colspan="4" class="text-right"><b>{{ _("Total Excise") }}</b></td>
+            <td class="num">
+            <b>{{ frappe.utils.fmt_money(sum_excise.total, currency=doc.currency) }}</b>
+            </td>
+        </tr>
         </tfoot>
         </table>
         <!-- New invoice items table END -->

@@ -9,72 +9,55 @@
 </style>
 
 <div class="print-format">
-    {# --- Issuer (Company) details --- #}
-    {% set company = frappe.get_doc("Company", doc.company) %}
-
-    <div class="issuer-company" style="margin-top:8px;">
-    <strong>{{ company.company_name or doc.company }}</strong><br>
-
-        {# 1) Prefer the address captured on the invoice (fastest & safest) #}
-        {% if doc.company_address_display %}
-            {{ (doc.company_address_display or "") | replace("\n","<br>") | safe }}
-        {% else %}
-        {# 2) Fallback: first Address linked to this Company #}
-        {% set links = frappe.get_all(
-            "Dynamic Link",
-            filters={"parenttype":"Address","link_doctype":"Company","link_name":doc.company},
-            fields=["parent"],
-            limit=1
-        ) %}
-        {% if links %}
-        {% set comp_addr = frappe.get_doc("Address", links[0].parent) %}
-        {{ comp_addr.address_line1 or "" }}{% if comp_addr.address_line2 %}<br>{{ comp_addr.address_line2 }}{% endif %}
-        {% if comp_addr.pincode or comp_addr.city %}<br>
-            {{ comp_addr.pincode or "" }} {{ comp_addr.city or "" }}
+    <h3 class="title">
+        {{ _("Sales Invoice") }} {{ doc.name }}
+    </h3>
+    <div class="issuer" style="margin-top:10px;">
+        <div>{{ _("Issue Date") }}:{{ doc.get_formatted("posting_date") }}</div>
+        {% if doc.due_date %}
+        <div>{{ _("Payment Due Date") }}:{{ doc.get_formatted("due_date") }}</div>
         {% endif %}
-        {% if comp_addr.country %}<br>{{ comp_addr.country }}{% endif %}
-        {% if comp_addr.phone %}<br>{{ _("Phone") }}: {{ comp_addr.phone }}{% endif %}
-        {% if comp_addr.email_id %}<br>{{ comp_addr.email_id }}{% endif %}
+        {% if doc.tax_event_date %}
+        <div>{{ _("Tax Event Date") }}:{{ doc.get_formatted("tax_event_date") }}</div>
         {% endif %}
-        {% endif %}
-
-        {# Optional extras printed if present on Company #}
-        {% if company.tax_id %}<br>{{ _("VAT") }}: {{ company.tax_id }}{% endif %}
     </div>
+
+    {% set company = frappe.get_doc("Company", doc.company) %}
+    <table class="parties-table" style="width:100%; border-collapse:collapse; margin:4mm 0 6mm;">
+        <tr>
+            <!-- Left column: issuer -->
+            <td style="width:55%; vertical-align:top; padding:0 6mm 0 0; font-size:11px; line-height:1.35;">
+            <div class="issuer-data">
+                <strong style="font-size:12px;">{{ company.company_name or doc.company }}</strong><br>
+                {% if doc.company_address_display %}
+                {{ (doc.company_address_display | replace('<br><br>', '<br>')) | safe }}
+                {% endif %}
+                {% if company.tax_id %}
+                <br>{{ _("VAT") }}: {{ company.tax_id }}
+                {% endif %}
+            </div>
+            </td>
+
+            <!-- Right column: client -->
+            <td style="width:45%; vertical-align:top; padding:0; font-size:11px; line-height:1.35;">
+            <div class="client-data">
+                <div><strong>{{ _("Customer") }}:</strong> {{ doc.customer_name or doc.customer }}</div>
+                {% set customer = doc.customer and frappe.get_cached_doc("Customer", doc.customer) %}
+                {% if customer %}
+                {% if customer.custom_eik %}<div>{{ _("EIK No.") }}: {{ customer.custom_eik }}</div>{% endif %}
+                {% if customer.custom_vat_number %}<div>{{ _("VAT No.") }}: {{ customer.custom_vat_number }}</div>{% endif %}
+                {% if customer.primary_address %}<div>{{ _("Address") }}: {{ customer.primary_address }}</div>{% endif %}
+                {% if customer.materially_responsible_person %}<div>{{ _("MOL") }}: {{ customer.materially_responsible_person }}</div>{% endif %}
+                {% if customer.emcs_tax_number %}<div>{{ _("EMCS Tax No") }}: {{ customer.emcs_tax_number }}</div>{% endif %}
+                {% if customer.emcs_trader_number %}<div>{{ _("EMCS Trader No") }}: {{ customer.emcs_trader_number }}</div>{% endif %}
+                {% endif %}
+            </div>
+            </td>
+        </tr>
+        </table>
 
 
     <div class="invoice">
-        <h3>{{ _("Sales Invoice") }} {{ doc.name }}</h3>
-        <div>{{ _("Issue Date") }}: {{ doc.get_formatted("posting_date") }}</div>
-        <div>{{ _("Payment Due Date") }}: {{ doc.get_formatted("due_date") }}</div>
-        <div>{{ _("Tax Event Date Date") }}: {{ doc.get_formatted("tax_event_date") }}</div>
-        
-        <!-- BANK Details -->
-        {{ eb_bank_block(doc) | safe }}
-         <!-- BANK Details -->
-        <div class="meta grid-3">
-            <div>{{ _("Customer") }}: {{ doc.customer_name or doc.customer }}</div>
-            {% set customer = doc.customer and frappe.get_cached_doc("Customer", doc.customer) %}
-            <div>
-                {{ _("EIK No.") }}: {{ customer.custom_eik }}
-            </div>
-            <div>
-                {{ _("VAT No.") }}: {{ customer.custom_vat_number }}
-            </div>
-            <div>
-                {{ _("Address") }}: {{ customer.primary_address }}
-            </div>
-            <div>
-                {{ _("MOL") }}: {{ customer.materially_responsible_person }}
-            </div>
-            <div>
-                {{ _("EMCS Tax No") }}: {{ customer.emcs_tax_number }}
-            </div>
-            <div>
-               {{ _("EMCS Trader No") }}: {{ customer.emcs_trader_number }}
-            </div>
-        </div>
-
         <table class="table table-bordered table-compact">
         <!-- New invoice items table -->
         <thead>
@@ -164,12 +147,6 @@
             <td colspan="4" class="text-right"><strong>{{ _("Grand Total") }}</strong></td>
             <td class="num"><strong>{{ doc.get_formatted("grand_total") }}</strong></td>
             </tr>
-            {% if doc.rounded_total %}
-            <tr>
-            <td colspan="4" class="text-right">{{ _("Rounded Total") }}</td>
-            <td class="num">{{ doc.get_formatted("rounded_total") }}</td>
-            </tr>
-            {% endif %}
             {% include "eb_invoice_templates/templates/includes/total_weight.html" ignore missing %}
             <tr>
             <td colspan="4" class="text-right"><b>{{ _("Total Excise") }}</b></td>
@@ -179,6 +156,11 @@
         </tr>
         </tfoot>
         </table>
+         <td class="bank-cell">
+                <div class="bank">
+                    {{ eb_bank_block(doc) | safe }}
+                </div>
+            </td>
         <!-- New invoice items table END -->
         
         <table class="table totals pull-right">
